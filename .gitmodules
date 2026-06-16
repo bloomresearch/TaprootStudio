@@ -1,0 +1,6 @@
+[submodule "packages/geminode-studio"]
+	path = packages/geminode-studio
+	url = https://github.com/bloomresearch/geminodestudio.git
+[submodule "packages/enscript"]
+	path = packages/enscript
+	url = https://github.com/bloomresearch/Enscript.git
