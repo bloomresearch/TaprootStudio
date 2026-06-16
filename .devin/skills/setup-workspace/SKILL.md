@@ -15,7 +15,7 @@ Ensure all submodule dependencies are populated and up to date so agents can ref
 3. If submodules are initialized but stale, run: `git submodule update --remote --merge`
 4. Confirm contents are present:
    - `packages/geminode-studio/` — Geminode Studio Workspace
-   - `packages/enscript/` — Enscript
+   - `packages/reaction-studio/` — Reaction Studio
 5. Report status to user.
 
 ## Submodule Registry
@@ -23,7 +23,7 @@ Ensure all submodule dependencies are populated and up to date so agents can ref
 | Name | Path | Remote |
 |------|------|--------|
 | Geminode Studio | `packages/geminode-studio/` | https://github.com/bloomresearch/geminodestudio.git |
-| Enscript | `packages/enscript/` | https://github.com/bloomresearch/Enscript.git |
+| Reaction Studio | `packages/reaction-studio/` | git@github.com:bloomresearch/ReactionStudio.git |
 
 ## Notes
 
