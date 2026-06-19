@@ -10,6 +10,13 @@ Phase 1 is **not** about feature completeness. It is about de-risking the two sc
 (Python-in-Electron packaging, React/React-Flow consolidation) and locking the contracts
 (daemon API, data schema) that let the work split cleanly afterward.
 
+> **Important head start:** the Geminode backend already ships a working **Python daemon foundation** at
+> `packages/geminode-studio/backend` — a **FastAPI** server (`/workflow/execute`, `/workflow/resume`,
+> `/workflow/models`, file upload, system-prompt/UI generation) over an **async `flowcore` engine**
+> (work-queue traversal, multi-input joins, back-edge loops, UI pause/resume) with a `pytest` suite.
+> It is **Gemini-only** and **stateless** (flows = JSON; no SQLAlchemy/vectors). So Phase 1 *adopts and
+> extends* this rather than building the daemon/engine from scratch.
+
 ---
 
 ## Definition of Done (Phase 1)
@@ -38,16 +45,19 @@ Owner: lead. Everything else forks from here.
       `packages/shared-types`.
 - [ ] Choose + configure JS workspace manager (pnpm recommended) and Python project (`uv`/Poetry).
 - [ ] **Define the daemon API contract** (OpenAPI + WS event schema) and shared TS/Python types —
-      run lifecycle, streaming step events (mirror Geminode `ChatMessage`/`onStep`), flow CRUD,
-      provider config. This is the seam every other stream codes against.
-- [ ] **Define the initial DB schema** (Section 5 of the vision) as the SQLAlchemy source of truth.
+      run lifecycle, streaming step events, flow CRUD, provider config. **Start from the existing
+      `backend/server/api` endpoints + the engine's emitted event types** (`step_start`,
+      `thought_update`, `step_output`, `ui_pause`, `error`) rather than inventing from scratch.
+- [ ] Relocate/adopt `packages/geminode-studio/backend` as the basis of `apps/daemon`.
+- [ ] **Define the initial DB schema** (Section 6 of the vision) as the SQLAlchemy source of truth.
 - [ ] CI pipeline skeleton (lint, type-check, tests for both apps).
 
 > Deliverable: merged contracts. After this, A–E are independent.
 
 ### Stream A — Python Daemon Packaging & Lifecycle *(highest risk — start immediately)*
 Files: `apps/daemon/**`, Electron main spawn logic.
-- [ ] FastAPI + WebSocket server skeleton implementing the Stream 0 contract (stub responses).
+- [ ] Take the **existing FastAPI server** (`backend/server`) as the daemon; add WS streaming + a
+      versioned API surface per the Stream 0 contract (the SSE/event types already exist).
 - [ ] Cross-platform interpreter strategy (embeddable Python / PyInstaller / `uv`) + bundling.
 - [ ] Electron main: spawn daemon on launch, health-check, restart-on-crash, clean shutdown.
 - [ ] Local-only binding + handshake/auth token between Electron and daemon.
@@ -71,17 +81,23 @@ Files: `packages/flow-editor/**`.
 - *Touches:* editor package only. Integrates with B via a stable prop interface.
 
 ### Stream D — Flow Execution Engine (Python) + Provider Layer
-Files: `apps/daemon/engine/**`, `apps/daemon/providers/**`.
-- [ ] Port `workflowExecutor.ts` semantics to Python (start → traversal → end, branching, step events).
-- [ ] Multi-provider LLM interface + **Gemini adapter** (OpenAI/Anthropic/Ollama stubbed).
-- [ ] Stream step events over WS per the Stream 0 schema; run a single-agent flow end-to-end.
+Files: `apps/daemon/flowcore/**`, `apps/daemon/providers/**`.
+- [ ] **Adopt the existing `flowcore` engine** (do *not* re-port); keep its async work-queue, joins,
+      back-edge loops, and UI pause/resume. Preserve the existing `pytest` suite as a regression net.
+- [ ] **Extract a provider abstraction** behind the current Gemini node: one interface + **Gemini
+      adapter** (OpenAI/Anthropic/Ollama stubbed). The node currently hard-binds `google-genai`.
+- [ ] Wire step events over WS per the Stream 0 schema; run a single-agent flow end-to-end.
 - *Touches:* daemon engine/providers. Depends on Stream 0 contract + Stream A server skeleton.
+- *Note:* true **parallel fan-out**, **per-port async opt-in**, and a first-class **Loop node** are
+  desired but **deferred to Phase 2+** (the engine is single-active-node today and that's fine for the
+  Phase 1 end-to-end goal).
 
 ### Stream E — Data Layer (SQLAlchemy) + Flow Persistence
 Files: `apps/daemon/db/**`.
-- [ ] SQLAlchemy models for the Section 5 schema; SQLite default; migration tooling (Alembic).
+- [ ] SQLAlchemy models for the Section 6 schema; SQLite default; migration tooling (Alembic).
 - [ ] Flow CRUD + `PROJECT_FLOW_LINK` (enable/import-by-reference) endpoints.
-- [ ] Seed/import one Geminode JSON flow as a smoke test.
+- [ ] Import the existing `packages/geminode-studio/flows/*.json` presets as a smoke test (replacing
+      the current stateless JSON-file loading path with the SQLAlchemy-backed store).
 - *Touches:* daemon db package. Depends on Stream 0 schema.
 
 ---
@@ -105,6 +121,14 @@ flowchart LR
 ---
 
 ## Explicitly Deferred to Phase 2+
+- **Parallel branch execution** (concurrent `asyncio.gather` of ready nodes), **per-node/per-port
+  async opt-in**, and a first-class **Loop node**.
+- **Diff node** + composable human-in-the-loop approval gates (built on the existing `ui_interactive`
+  pause/resume).
+- The **Project Board** surface (projects/milestones/sprints/issues/blocking, live agent status,
+  kanban + flow-graph layouts).
+- The **5-surface swap-rotation workspace** + 3D mini-compass (Phase 1 can ship a single surface +
+  the flip interaction).
 - ECP engine (meta-RAG tool selection) and tool scenario embeddings.
 - Custom Tool Builder panel (UI config + Python editor) and the built-in tool catalog.
 - Agent node **states** (state machine + dynamic transition handles).
