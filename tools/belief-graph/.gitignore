@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Test / tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Runtime artifacts
+*.log
+*.db
+*.sqlite
+*.sqlite3
+belief_graph*.db
+belief_graph_kuzu/
+*_kuzu/
+
+# Env / secrets
+.env
+.env.*
